@@ -72,10 +72,7 @@ async def root():
     return RedirectResponse(url="/upload")
 
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, RedirectResponse
-
-app = FastAPI()
+from fastapi.responses import HTMLResponse
 
 @app.get("/upload", response_class=HTMLResponse)
 async def upload_form():
@@ -99,7 +96,7 @@ async def upload_form():
             border-radius: 12px;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             text-align: center;
-            width: 320px;
+            width: 340px;
           }
           .logo {
             width: 120px;
@@ -125,27 +122,59 @@ async def upload_form():
           button:hover {
             background-color: #1558b0;
           }
+          .spinner {
+            display: none;
+            margin-top: 20px;
+          }
+          .spinner div {
+            width: 18px;
+            height: 18px;
+            background-color: #1a73e8;
+            border-radius: 100%;
+            display: inline-block;
+            animation: bouncedelay 1.4s infinite ease-in-out both;
+          }
+          .spinner .bounce1 {
+            animation-delay: -0.32s;
+          }
+          .spinner .bounce2 {
+            animation-delay: -0.16s;
+          }
+
+          @keyframes bouncedelay {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+          }
+
           footer {
             margin-top: 20px;
             font-size: 12px;
             color: #777;
           }
         </style>
+        <script>
+          function showSpinner() {
+            document.getElementById('spinner').style.display = 'block';
+          }
+        </script>
       </head>
       <body>
         <div class="container">
           <img class="logo" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="GeoBatcher Logo">
           <h2>Upload Your Address File</h2>
-          <form action="/geocode-csv/" enctype="multipart/form-data" method="post">
+          <form action="/geocode-csv/" enctype="multipart/form-data" method="post" onsubmit="showSpinner()">
             <input type="file" name="file" accept=".csv,.xlsx" required><br>
             <button type="submit">Upload & Geocode</button>
           </form>
+          <div id="spinner" class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+            <p>Processing, please wait...</p>
+          </div>
           <footer>© 2025 GeoBatcher • Simple. Fast. Reliable.</footer>
         </div>
       </body>
     </html>
     """
 
-@app.get("/")
-async def root():
-    return RedirectResponse(url="/upload")
