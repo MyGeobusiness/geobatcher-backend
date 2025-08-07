@@ -1,16 +1,147 @@
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.responses import RedirectResponse
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 import pandas as pd
 import aiohttp
-import os
 import uuid
+import os
 import asyncio
+
+# Load environment variables
+load_dotenv()
+LOCATIONIQ_API_KEY = os.getenv("LOCATIONIQ_API_KEY")
 
 app = FastAPI()
 
-LOCATIONIQ_API_KEY = "pk.6153b90124c847b29ae6af3f451117df"  # Replace with your actual key
+# Serve static files (e.g., sample templates)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", response_class=RedirectResponse)
+async def redirect_to_upload():
+    return RedirectResponse(url="/upload")
+
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <html>
+        <head>
+            <title>Geobatcher Upload</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f7f9;
+                    padding: 40px;
+                    color: #333;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: auto;
+                    background: white;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                }
+                h2 {
+                    color: #2c3e50;
+                }
+                input[type=file] {
+                    display: block;
+                    margin-bottom: 15px;
+                }
+                .btn {
+                    background-color: #3498db;
+                    color: white;
+                    padding: 10px 20px;
+                    border: none;
+                    cursor: pointer;
+                    border-radius: 5px;
+                }
+                .btn:hover {
+                    background-color: #2980b9;
+                }
+                .note, .footer {
+                    font-size: 14px;
+                    margin-top: 10px;
+                    color: #888;
+                }
+                .template-links {
+                    margin-top: 20px;
+                }
+                footer {
+                    margin-top: 40px;
+                    text-align: center;
+                    font-size: 13px;
+                    color: #aaa;
+                }
+            </style>
+            <script>
+                async function handleFormSubmit(event) {
+                    event.preventDefault();
+                    const form = event.target;
+                    const fileInput = form.querySelector('input[name="file"]');
+                    const msg = document.getElementById("msg");
+
+                    if (!fileInput.files.length) {
+                        msg.innerHTML = "❌ Please select a file.";
+                        return;
+                    }
+
+                    const formData = new FormData(form);
+                    msg.innerHTML = "⏳ Uploading and processing...";
+
+                    const response = await fetch("/geocode-csv/", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "geocoded.csv";
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        msg.innerHTML = "✅ Success! Your geocoded file has been downloaded.";
+                    } else {
+                        const error = await response.json();
+                        msg.innerHTML = `❌ Error: ${error.detail}`;
+                    }
+                }
+            </script>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Upload Your Address File</h2>
+                <p class="note">Your file must include a column named <strong>"Street Address"</strong>.</p>
+
+                <form onsubmit="handleFormSubmit(event)">
+                    <input type="file" name="file" accept=".csv,.xlsx" required>
+                    <button type="submit" class="btn">Upload and Geocode</button>
+                </form>
+
+                <div class="template-links">
+                    <p><strong>Download Sample Templates:</strong></p>
+                    <ul>
+                        <li><a href="/static/sample_address_template.csv" download>Sample CSV Template</a></li>
+                        <li><a href="/static/sample_address_template.xlsx" download>Sample Excel Template</a></li>
+                    </ul>
+                </div>
+
+                <p id="msg" class="note"></p>
+
+                <footer>
+                    &copy; 2025 Geobatcher. All rights reserved.
+                </footer>
+            </div>
+        </body>
+    </html>
+    """
+
 
 async def geocode_address(session, address):
     url = f"https://us1.locationiq.com/v1/search.php?key={LOCATIONIQ_API_KEY}&q={address}&format=json"
@@ -22,6 +153,7 @@ async def geocode_address(session, address):
     except Exception:
         pass
     return None, None
+
 
 @app.post("/geocode-csv/")
 async def geocode_csv(file: UploadFile = File(...)):
@@ -54,7 +186,7 @@ async def geocode_csv(file: UploadFile = File(...)):
             lat, lon = await geocode_address(session, address)
             latitudes.append(lat)
             longitudes.append(lon)
-            await asyncio.sleep(0.6)  # Stay within API rate limits
+            await asyncio.sleep(0.6)  # Stay within rate limit
 
     df["Latitude"] = latitudes
     df["Longitude"] = longitudes
@@ -64,74 +196,9 @@ async def geocode_csv(file: UploadFile = File(...)):
 
     os.remove(temp_filename)
     return FileResponse(output_filename, media_type="text/csv", filename=output_filename)
-@app.get("/")
-async def root():
-    return RedirectResponse(url="/docs")
-@app.get("/")
-async def root():
-    return RedirectResponse(url="/upload")
 
 
-from fastapi.responses import HTMLResponse, RedirectResponse
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return RedirectResponse(url="/upload")
 
-@app.get("/upload", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <html>
-        <head>
-            <title>Geobatcher Upload</title>
-            <style>
-                body {
-                    background-color: #f5f7fa;
-                    font-family: Arial, sans-serif;
-                    color: #333;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    padding-top: 50px;
-                }
-                .upload-container {
-                    background-color: white;
-                    padding: 40px;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                    max-width: 500px;
-                    width: 90%;
-                    text-align: center;
-                }
-                h2 {
-                    margin-bottom: 20px;
-                }
-                input[type="file"] {
-                    margin-bottom: 20px;
-                }
-                .note {
-                    color: #cc0000;
-                    font-size: 0.9em;
-                    margin-top: 10px;
-                }
-                .logo {
-                    width: 100px;
-                    margin-bottom: 20px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="upload-container">
-                <img src="https://static.vecteezy.com/system/resources/previews/028/282/402/non_2x/geo-logo-design-inspiration-for-a-unique-identity-modern-elegance-and-creative-design-watermark-your-success-with-the-striking-this-logo-vector.jpg" class="logo" alt="Geo Logo">
-                <h2>Upload Your Address File (.csv or .xlsx)</h2>
-                <form action="/geocode-csv/" enctype="multipart/form-data" method="post">
-                    <input type="file" name="file" accept=".csv,.xlsx" required><br>
-                    <button type="submit">Upload and Geocode</button>
-                </form>
-                <p class="note">⚠️ Note: Your file must contain a column titled <strong>"Street Address"</strong>.</p>
-            </div>
-        </body>
-    </html>
-    """
 
 
