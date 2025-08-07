@@ -1,3 +1,4 @@
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.responses import RedirectResponse
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
@@ -66,4 +67,24 @@ async def geocode_csv(file: UploadFile = File(...)):
 @app.get("/")
 async def root():
     return RedirectResponse(url="/docs")
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/upload")
 
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <html>
+        <head>
+            <title>Geobatcher Upload</title>
+        </head>
+        <body>
+            <h2>Upload Your Address File (.csv or .xlsx)</h2>
+            <form action="/geocode-csv/" enctype="multipart/form-data" method="post">
+                <input type="file" name="file" accept=".csv,.xlsx">
+                <button type="submit">Upload and Geocode</button>
+            </form>
+        </body>
+    </html>
+    """
