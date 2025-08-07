@@ -1,3 +1,4 @@
+from fastapi.responses import RedirectResponse
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import pandas as pd
@@ -62,3 +63,7 @@ async def geocode_csv(file: UploadFile = File(...)):
 
     os.remove(temp_filename)
     return FileResponse(output_filename, media_type="text/csv", filename=output_filename)
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/docs")
+
