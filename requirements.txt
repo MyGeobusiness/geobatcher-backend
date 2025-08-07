@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 fastapi
 uvicorn[standard]
 pandas
 openpyxl
 aiohttp
 python-multipart
+=======
+fastapi
+uvicorn[standard]
+pandas
+openpyxl
+aiohttp
+python-multipart
+>>>>>>> 9e298a3071c7b044feb192a8c4733e35f431b4cd
