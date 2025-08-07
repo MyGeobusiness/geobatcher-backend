@@ -72,19 +72,74 @@ async def root():
     return RedirectResponse(url="/upload")
 
 
+from fastapi.responses import HTMLResponse
+
 @app.get("/upload", response_class=HTMLResponse)
 async def upload_form():
     return """
     <html>
         <head>
             <title>Geobatcher Upload</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f7f8;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    margin: 0;
+                }
+
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    text-align: center;
+                }
+
+                h2 {
+                    margin-bottom: 20px;
+                    color: #333;
+                }
+
+                input[type="file"] {
+                    margin: 20px 0;
+                    padding: 10px;
+                }
+
+                button {
+                    background-color: #2d89ef;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    cursor: pointer;
+                }
+
+                button:hover {
+                    background-color: #1b61c1;
+                }
+
+                .logo {
+                    width: 120px;
+                    margin-bottom: 20px;
+                }
+            </style>
         </head>
         <body>
-            <h2>Upload Your Address File (.csv or .xlsx)</h2>
-            <form action="/geocode-csv/" enctype="multipart/form-data" method="post">
-                <input type="file" name="file" accept=".csv,.xlsx">
-                <button type="submit">Upload and Geocode</button>
-            </form>
+            <div class="container">
+                <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Iconic_image_placeholder.png" alt="Geobatcher Logo">
+                <h2>Upload Your Address File</h2>
+                <form action="/geocode-csv/" enctype="multipart/form-data" method="post">
+                    <input type="file" name="file" accept=".csv,.xlsx" required>
+                    <br>
+                    <button type="submit">Upload and Geocode</button>
+                </form>
+            </div>
         </body>
     </html>
     """
